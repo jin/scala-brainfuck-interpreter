@@ -88,8 +88,6 @@ object BF extends App {
   def isPrint(c: Char) = c == '.'
   def isRead(c: Char) = c == ','
 
-  override def main(args: Array[String]) {
-    if (args.isEmpty) { throw new Exception("Please enter a filename") }
-    parseBFSource(args(0))
-  }
+  if (args.isEmpty) { throw new Exception("Please enter a filename") }
+  parseBFSource(args(0))
 }
