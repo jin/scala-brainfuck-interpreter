@@ -23,69 +23,33 @@ object BF extends App {
   }
 
   def parseInstructions(instructions: List[Char]) = {
-
     val cells = initializeCells
-    val lbIndexes = Stack[Int]() // left bracket indexes
-
-    val instructionCount = instructions.size
-
+    val scopes = buildScopes(instructions)
     var instructionIndex = 0
     var cellIndex = 0
 
-    val scopes = buildScopes(instructions)
-
     def printDebug(instruction: Char)= {
-      println(cells.toList.take(4), instruction, instructionIndex, cellIndex)
-      println(instructions.foldLeft("") (_ + _))
       val pointerArray = new Array[String](instructionIndex + 1)
       pointerArray(instructionIndex) = "^"
+
+      println(cells.toList.take(10), instruction, instructionIndex, cellIndex)
+      println(instructions.foldLeft("") (_ + _))
       println(pointerArray.foldLeft("") {
-        (acc, v) => if (v == null) {
-          acc + " "
-        } else {
-          acc + v
-        }
+        (acc, v) => if (v == null) { acc + " " } else { acc + v } 
       })
     }
 
-    while (instructionIndex < instructionCount) {
+    while (instructionIndex < instructions.size) {
       val i = instructions(instructionIndex)
-      if (isPlus(i)) {
 
-        incCellValue(cells, cellIndex)
-
-      } else if (isMinus(i)) {
-
-        decCellValue(cells, cellIndex)
-
-      } else if (isNext(i)) {
-
-        cellIndex += 1
-
-      } else if (isPrev(i)) {
-
-        cellIndex -= 1
-
-      } else if (isRead(i)) {
-
-        cells(cellIndex) = StdIn.readChar.toInt
-
-      } else if (isPrint(i)) {
-
-        print(cells(cellIndex).toChar)
-
-      } else if (isLB(i)) {
-
-        if (cells(cellIndex) == 0) {
-          instructionIndex = scopes.get(instructionIndex).get
-        }
-      } else if (isRB(i)) {
-
-        if (cells(cellIndex) != 0) {
-          instructionIndex = scopes.get(instructionIndex).get
-        }
-
-      } else throw new Exception("SyntaxError")
+      if (isPlus(i))        incCellValue(cells, cellIndex)
+      else if (isMinus(i))  decCellValue(cells, cellIndex)
+      else if (isNext(i))   cellIndex += 1 
+      else if (isPrev(i))   cellIndex -= 1
+      else if (isRead(i))   cells(cellIndex) = StdIn.readChar.toInt
+      else if (isPrint(i))  print(cells(cellIndex).toChar) 
+      else if (isLB(i) && isZero(cells, cellIndex))   instructionIndex = scopes.get(instructionIndex).get
+      else if (isRB(i) && !isZero(cells, cellIndex))  instructionIndex = scopes.get(instructionIndex).get 
 
       instructionIndex += 1
     }
@@ -113,11 +77,12 @@ object BF extends App {
 
   def incCellValue(cells: Array[Int], idx: Int) = cells(idx) += 1
   def decCellValue(cells: Array[Int], idx: Int) = cells(idx) -= 1
+  def isZero(cells: Array[Int], idx: Int) = cells(idx) == 0
 
   def isPlus(c: Char) = c == '+'
+  def isMinus(c: Char) = c == '-'
   def isLB(c: Char) = c == '['
   def isRB(c: Char) = c == ']'
-  def isMinus(c: Char) = c == '-'
   def isNext(c: Char) = c == '>'
   def isPrev(c: Char) = c == '<'
   def isPrint(c: Char) = c == '.'
