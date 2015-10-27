@@ -1,7 +1,8 @@
-import scala.io.Source;
-import scala.io.BufferedSource;
-import scala.collection.mutable.Stack;
-import scala.io.StdIn;
+import scala.io.Source
+import scala.io.BufferedSource
+import scala.collection.mutable.Stack
+import scala.collection.mutable.HashMap
+import scala.io.StdIn
 
 object BF extends App {
 
@@ -31,6 +32,8 @@ object BF extends App {
     var instructionIndex = 0
     var cellIndex = 0
 
+    val scopes = buildScopes(instructions)
+
     def printDebug(instruction: Char)= {
       println(cells.toList.take(4), instruction, instructionIndex, cellIndex)
       println(instructions.foldLeft("") (_ + _))
@@ -47,7 +50,6 @@ object BF extends App {
 
     while (instructionIndex < instructionCount) {
       val i = instructions(instructionIndex)
-      printDebug(i)
       if (isPlus(i)) {
 
         incCellValue(cells, cellIndex)
@@ -75,30 +77,38 @@ object BF extends App {
       } else if (isLB(i)) {
 
         if (cells(cellIndex) == 0) {
-          if (!lbIndexes.isEmpty && lbIndexes.top == instructionIndex) {
-            lbIndexes.pop
-          }
-          while (instructions(instructionIndex) != ']') {
-            instructionIndex += 1
-          }
-        } else {
-          if (lbIndexes.isEmpty || lbIndexes.top != instructionIndex) {
-            lbIndexes.push(instructionIndex)
-          }
+          instructionIndex = scopes.get(instructionIndex).get
         }
-
       } else if (isRB(i)) {
 
-        if (cells(cellIndex) == 0) {
-          lbIndexes.pop
-        } else {
-          instructionIndex = lbIndexes.top - 1
+        if (cells(cellIndex) != 0) {
+          instructionIndex = scopes.get(instructionIndex).get
         }
 
       } else throw new Exception("SyntaxError")
 
       instructionIndex += 1
     }
+  }
+
+  def buildScopes(instructions: List[Char]): HashMap[Int, Int] = {
+    val scopes = HashMap[Int, Int]()
+    val leftIdxes = Stack[Int]()
+    // use stack for LB and queue for RB indexes
+    for (n <- 0 to (instructions.size - 1)) yield {
+      if (isLB(instructions(n))) {
+        leftIdxes.push(n)
+      } else if (isRB(instructions(n))) {
+        assert(!leftIdxes.isEmpty)
+
+        val leftIdx = leftIdxes.pop
+        scopes.update(leftIdx, n)
+        scopes.update(n, leftIdx)
+      }
+    }
+
+    assert(leftIdxes.isEmpty)
+    scopes
   }
 
   def incCellValue(cells: Array[Int], idx: Int) = cells(idx) += 1
